@@ -354,15 +354,9 @@
  
     <script>
         // ============================================================
-        //  BACKEND CONFIGURATION - FIXED FOR PRODUCTION
+        //  BACKEND CONFIGURATION
         // ============================================================
-        // ✅ Use Cloudflare Worker URL for production (works for Jio users)
         const API_URL = 'https://exambuddy-backend.kkeerthivasan811.workers.dev';
-        
-        // Local development (comment out for production)
-        // const API_URL = 'http://127.0.0.1:8080';
-        // const API_URL = 'http://localhost:8080';
-        // const API_URL = 'https://exambuddy-backend.up.railway.app';
  
         let allExams = [];
         let userExams = [];
@@ -377,7 +371,7 @@
         let currentChatType = 'global';
         let currentPrivateBuddyId = null;
         let currentPrivateBuddyName = null;
-        let currentGroupId = null;  // ✅ ADDED: Unique group ID for separation
+        let currentGroupId = null;
 
         // ============================================================
         //  ABORT CONTROLLER POLYFILL
@@ -478,7 +472,6 @@
         //  BLOCK FUNCTIONS
         // ============================================================
         
-        // Load blocked users
         async function loadBlockedUsers() {
             if (!authToken) return;
             
@@ -497,7 +490,6 @@
             }
         }
 
-        // Toggle block/unblock user
         async function toggleBlockUser() {
             if (!currentPrivateBuddyId) {
                 alert('Please select a user first');
@@ -505,7 +497,6 @@
             }
 
             if (isBlocked) {
-                // Unblock
                 if (!confirm(`Are you sure you want to unblock ${currentPrivateBuddyName}?`)) return;
                 
                 try {
@@ -533,7 +524,6 @@
                     alert('Error unblocking user');
                 }
             } else {
-                // Block
                 if (!confirm(`⚠️ Are you sure you want to block ${currentPrivateBuddyName}? They won't be able to message you.`)) return;
                 
                 try {
@@ -568,7 +558,6 @@
             }
         }
 
-        // Update block button appearance
         function updateBlockButton() {
             const blockBtn = document.getElementById('blockBtn');
             if (!blockBtn) return;
@@ -578,7 +567,6 @@
                 return;
             }
             
-            // Check if current user is blocked
             isBlocked = blockedUsers.some(u => u._id === currentPrivateBuddyId);
             
             blockBtn.style.display = 'inline-block';
@@ -597,7 +585,6 @@
             }
         }
 
-        // Check if a user is blocked
         async function checkIfBlocked(userId) {
             const blockBtn = document.getElementById('blockBtn');
             if (!blockBtn) return;
@@ -632,7 +619,7 @@
         }
 
         // ============================================================
-        //  LOAD USER DATA - Updated
+        //  LOAD USER DATA
         // ============================================================
         async function loadUserData() {
             if (!currentUser || !authToken) {
@@ -648,7 +635,6 @@
                     'Content-Type': 'application/json'
                 };
  
-                // Load blocked users
                 await loadBlockedUsers();
  
                 const allExamsRes = await fetch(API_URL + '/api/exams', { headers });
@@ -726,8 +712,9 @@
                     url += `chatType=private&privateChatId=${privateChatId}`;
                     console.log('🔒 Loading private chat:', privateChatId);
                 } else if (currentChatType === 'group') {
-                    // ✅ FIXED: Use unique group ID instead of 'global'
-                    const groupId = currentGroupId || 'group_' + Date.now();
+                    // ✅ FIXED: Use user-based persistent group ID
+                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                    const groupId = `group_${userId}`;
                     url += `chatType=group&groupId=${groupId}`;
                     console.log('👥 Loading group chat with ID:', groupId);
                 } else {
@@ -1116,8 +1103,10 @@
             currentChatType = 'group';
             currentPrivateBuddyId = null;
             currentPrivateBuddyName = null;
-            // ✅ FIXED: Generate unique group ID
-            currentGroupId = currentGroupId || 'group_' + Date.now();
+            
+            // ✅ FIXED: Use persistent group ID based on user ID
+            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+            currentGroupId = `group_${userId}`;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnGroup').classList.add('active');
@@ -1143,13 +1132,11 @@
             document.getElementById('chatUserInfo').textContent = 'Select a buddy to chat with';
             document.getElementById('privateUserSelector').style.display = 'block';
             
-            // Hide block button initially
             document.getElementById('blockBtn').style.display = 'none';
             document.getElementById('blockedMessageContainer').style.display = 'none';
             
             updatePrivateUserList();
             
-            // Auto-select first buddy if available
             const select = document.getElementById('privateUserSelect');
             if (select && select.options.length > 1) {
                 select.selectedIndex = 1;
@@ -1197,7 +1184,6 @@
                 document.getElementById('chatTitleDisplay').textContent = `🔒 Private Chat with ${userName}`;
                 document.getElementById('chatUserInfo').textContent = `You are chatting with ${userName}`;
                 
-                // Check if blocked
                 checkIfBlocked(userId);
                 
                 loadMessagesByType();
@@ -1222,8 +1208,9 @@
         }
         
         function openGroupChat() {
-            // ✅ FIXED: Generate group ID before opening
-            currentGroupId = currentGroupId || 'group_' + Date.now();
+            // ✅ FIXED: Set group ID before opening
+            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+            currentGroupId = `group_${userId}`;
             switchToGroup();
             document.getElementById('chatModal').classList.add('active');
             startMessageRefresh();
@@ -1246,7 +1233,6 @@
                 select.value = userId;
             }
             
-            // Check if user is blocked
             checkIfBlocked(userId);
             
             loadMessagesByType();
@@ -1277,13 +1263,11 @@
                 return;
             }
 
-            // Check if blocked
             if (currentChatType === 'private' && isBlocked) {
                 alert('⚠️ You cannot send messages to a blocked user.');
                 return;
             }
 
-            // Validate private chat has a buddy selected
             if (currentChatType === 'private' && !currentPrivateBuddyId) {
                 alert('⚠️ Please select a buddy from the dropdown first!');
                 const select = document.getElementById('privateUserSelect');
@@ -1308,8 +1292,9 @@
                 payload.targetUserId = currentPrivateBuddyId;
                 console.log('🔒 Sending private message to:', currentPrivateBuddyName);
             } else if (currentChatType === 'group') {
-                // ✅ FIXED: Use unique group ID instead of 'global'
-                const groupId = currentGroupId || 'group_' + Date.now();
+                // ✅ FIXED: Use persistent group ID
+                const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                const groupId = `group_${userId}`;
                 payload.groupId = groupId;
                 payload.chatId = groupId;
                 console.log('👥 Sending group message to:', groupId);
@@ -1357,7 +1342,7 @@
         }
  
         // ============================================================
-        //  DISPLAY MESSAGES - WITH IMAGE SUPPORT & BLOCK FILTER
+        //  DISPLAY MESSAGES - FIXED
         // ============================================================
         function displayMessages() {
             const chatArea = document.getElementById('chatArea');
@@ -1376,29 +1361,28 @@
             
             const userId = currentUser.id || currentUser._id;
             
-            // Filter messages based on chat type
             let filteredMessages = messages;
             
             if (currentChatType === 'private' && currentPrivateBuddyId) {
                 const privateChatId = [userId, currentPrivateBuddyId].sort().join('_');
                 filteredMessages = messages.filter(m => {
-                    // Check if message belongs to this private chat
                     const isPrivate = m.chatType === 'private' && m.privateChatId === privateChatId;
                     if (!isPrivate) return false;
                     
-                    // Check if message is from blocked user
                     const senderId = m.userId?._id || m.userId;
                     if (isBlocked && senderId === currentPrivateBuddyId) {
-                        return false; // Hide blocked messages
+                        return false;
                     }
                     return true;
                 });
             } else if (currentChatType === 'group') {
-                // ✅ FIXED: Filter by unique group ID
-                const groupId = currentGroupId || 'group_';
+                // ✅ FIXED: Filter by persistent group ID
+                const userIdGroup = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                const groupId = `group_${userIdGroup}`;
                 filteredMessages = messages.filter(m => 
                     m.chatType === 'group' && m.groupId === groupId
                 );
+                console.log('👥 Filtering group messages with ID:', groupId);
             } else {
                 filteredMessages = messages.filter(m => m.chatType === 'global');
             }
@@ -1426,7 +1410,6 @@
                 const messageText = msg.message || '';
                 const messageType = msg.messageType || 'text';
                 
-                // ===== CHECK IF MESSAGE IS IMAGE =====
                 const isImageUrl = messageText.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i) || 
                                    (messageText.includes('res.cloudinary.com') && messageText.includes('image/upload'));
                 const isVideoUrl = messageText.match(/\.(mp4|webm|ogg|mov)(\?.*)?$/i) || 
@@ -1588,7 +1571,8 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    const groupId = currentGroupId || 'group_' + Date.now();
+                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                    const groupId = `group_${userId}`;
                     payload.groupId = groupId;
                     payload.chatId = groupId;
                 }
@@ -1666,7 +1650,8 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    const groupId = currentGroupId || 'group_' + Date.now();
+                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                    const groupId = `group_${userId}`;
                     payload.groupId = groupId;
                     payload.chatId = groupId;
                 }
@@ -1746,7 +1731,8 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    const groupId = currentGroupId || 'group_' + Date.now();
+                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                    const groupId = `group_${userId}`;
                     payload.groupId = groupId;
                     payload.chatId = groupId;
                 }
@@ -1808,7 +1794,8 @@
                         if (currentChatType === 'private' && currentPrivateBuddyId) {
                             payload.targetUserId = currentPrivateBuddyId;
                         } else if (currentChatType === 'group') {
-                            const groupId = currentGroupId || 'group_' + Date.now();
+                            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
+                            const groupId = `group_${userId}`;
                             payload.groupId = groupId;
                             payload.chatId = groupId;
                         }
@@ -1860,22 +1847,19 @@
         }
  
         // ============================================================
-        //  AUTO-REFRESH MESSAGES - FIXED
+        //  AUTO-REFRESH MESSAGES
         // ============================================================
         let messageRefreshInterval = null;
         let isRefreshing = false;
 
         function startMessageRefresh() {
-            // Clear any existing interval
             if (messageRefreshInterval) {
                 clearInterval(messageRefreshInterval);
                 messageRefreshInterval = null;
             }
             
-            // Start new interval
             messageRefreshInterval = setInterval(() => {
                 if (currentUser && document.getElementById('chatModal').classList.contains('active')) {
-                    // Only refresh if not already refreshing
                     if (!isRefreshing) {
                         isRefreshing = true;
                         loadMessagesByType().then(() => {
@@ -1886,7 +1870,7 @@
                         });
                     }
                 }
-            }, 5000); // Refresh every 5 seconds
+            }, 5000);
         }
 
         function stopMessageRefresh() {

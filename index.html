@@ -354,9 +354,13 @@
  
     <script>
         // ============================================================
-        //  BACKEND CONFIGURATION
+        //  BACKEND CONFIGURATION - FIXED FOR PRODUCTION
         // ============================================================
-        const API_URL = 'http://127.0.0.1:8080';
+        // ✅ Use Cloudflare Worker URL for production (works for Jio users)
+        const API_URL = 'https://exambuddy-backend.kkeerthivasan811.workers.dev';
+        
+        // Local development (comment out for production)
+        // const API_URL = 'http://127.0.0.1:8080';
         // const API_URL = 'http://localhost:8080';
         // const API_URL = 'https://exambuddy-backend.up.railway.app';
  
@@ -412,7 +416,7 @@
                     return testBackend(retryCount + 1);
                 }
                 
-                alert('⚠️ Backend is not responding. Please make sure the backend server is running on port 8080.');
+                alert('⚠️ Backend is not responding. Please make sure the backend server is running.');
                 return false;
             }
         }

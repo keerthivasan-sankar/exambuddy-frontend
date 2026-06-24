@@ -377,6 +377,7 @@
         let currentChatType = 'global';
         let currentPrivateBuddyId = null;
         let currentPrivateBuddyName = null;
+        let currentGroupId = null;  // ✅ ADDED: Unique group ID for separation
 
         // ============================================================
         //  ABORT CONTROLLER POLYFILL
@@ -708,7 +709,7 @@
         }
  
         // ============================================================
-        //  LOAD MESSAGES BY TYPE
+        //  LOAD MESSAGES BY TYPE - FIXED
         // ============================================================
         async function loadMessagesByType() {
             try {
@@ -725,8 +726,10 @@
                     url += `chatType=private&privateChatId=${privateChatId}`;
                     console.log('🔒 Loading private chat:', privateChatId);
                 } else if (currentChatType === 'group') {
-                    url += `chatType=group&groupId=global`;
-                    console.log('👥 Loading group chat');
+                    // ✅ FIXED: Use unique group ID instead of 'global'
+                    const groupId = currentGroupId || 'group_' + Date.now();
+                    url += `chatType=group&groupId=${groupId}`;
+                    console.log('👥 Loading group chat with ID:', groupId);
                 } else {
                     url += `chatType=global`;
                     console.log('🌍 Loading global chat');
@@ -1085,7 +1088,7 @@
         }
  
         // ============================================================
-        //  CHAT FUNCTIONS
+        //  CHAT FUNCTIONS - FIXED
         // ============================================================
         
         function switchToGlobal() {
@@ -1093,6 +1096,7 @@
             currentChatType = 'global';
             currentPrivateBuddyId = null;
             currentPrivateBuddyName = null;
+            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnGlobal').classList.add('active');
@@ -1112,6 +1116,8 @@
             currentChatType = 'group';
             currentPrivateBuddyId = null;
             currentPrivateBuddyName = null;
+            // ✅ FIXED: Generate unique group ID
+            currentGroupId = currentGroupId || 'group_' + Date.now();
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnGroup').classList.add('active');
@@ -1129,6 +1135,7 @@
         function switchToPrivate() {
             stopMessageRefresh();
             currentChatType = 'private';
+            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnPrivate').classList.add('active');
@@ -1215,6 +1222,8 @@
         }
         
         function openGroupChat() {
+            // ✅ FIXED: Generate group ID before opening
+            currentGroupId = currentGroupId || 'group_' + Date.now();
             switchToGroup();
             document.getElementById('chatModal').classList.add('active');
             startMessageRefresh();
@@ -1224,6 +1233,7 @@
             currentChatType = 'private';
             currentPrivateBuddyId = userId;
             currentPrivateBuddyName = userName;
+            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnPrivate').classList.add('active');
@@ -1251,7 +1261,7 @@
         }
  
         // ============================================================
-        //  SEND MESSAGE - Updated with block check
+        //  SEND MESSAGE - FIXED
         // ============================================================
         async function sendMessage() {
             const input = document.getElementById('messageInput');
@@ -1298,9 +1308,13 @@
                 payload.targetUserId = currentPrivateBuddyId;
                 console.log('🔒 Sending private message to:', currentPrivateBuddyName);
             } else if (currentChatType === 'group') {
-                payload.groupId = 'global';
-                console.log('👥 Sending group message');
+                // ✅ FIXED: Use unique group ID instead of 'global'
+                const groupId = currentGroupId || 'group_' + Date.now();
+                payload.groupId = groupId;
+                payload.chatId = groupId;
+                console.log('👥 Sending group message to:', groupId);
             } else {
+                payload.chatId = 'global';
                 console.log('🌍 Sending global message');
             }
 
@@ -1380,7 +1394,11 @@
                     return true;
                 });
             } else if (currentChatType === 'group') {
-                filteredMessages = messages.filter(m => m.chatType === 'group');
+                // ✅ FIXED: Filter by unique group ID
+                const groupId = currentGroupId || 'group_';
+                filteredMessages = messages.filter(m => 
+                    m.chatType === 'group' && m.groupId === groupId
+                );
             } else {
                 filteredMessages = messages.filter(m => m.chatType === 'global');
             }
@@ -1570,7 +1588,9 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    payload.groupId = 'global';
+                    const groupId = currentGroupId || 'group_' + Date.now();
+                    payload.groupId = groupId;
+                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1646,7 +1666,9 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    payload.groupId = 'global';
+                    const groupId = currentGroupId || 'group_' + Date.now();
+                    payload.groupId = groupId;
+                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1724,7 +1746,9 @@
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
                 } else if (currentChatType === 'group') {
-                    payload.groupId = 'global';
+                    const groupId = currentGroupId || 'group_' + Date.now();
+                    payload.groupId = groupId;
+                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1784,7 +1808,9 @@
                         if (currentChatType === 'private' && currentPrivateBuddyId) {
                             payload.targetUserId = currentPrivateBuddyId;
                         } else if (currentChatType === 'group') {
-                            payload.groupId = 'global';
+                            const groupId = currentGroupId || 'group_' + Date.now();
+                            payload.groupId = groupId;
+                            payload.chatId = groupId;
                         }
                         
                         console.log('📍 Sharing location:', payload);

@@ -287,9 +287,9 @@
                     </div>
                 </div>
                 
+                <!-- ===== CHAT CONTROLS - GROUP CHAT REMOVED ===== -->
                 <div class="chat-controls">
                     <button onclick="switchToGlobal()" id="btnGlobal" class="active">🌍 Global</button>
-                    <button onclick="switchToGroup()" id="btnGroup">👥 Group</button>
                     <button onclick="switchToPrivate()" id="btnPrivate">🔒 Private</button>
                 </div>
                 
@@ -371,7 +371,6 @@
         let currentChatType = 'global';
         let currentPrivateBuddyId = null;
         let currentPrivateBuddyName = null;
-        let currentGroupId = null;
 
         // ============================================================
         //  ABORT CONTROLLER POLYFILL
@@ -695,7 +694,7 @@
         }
  
         // ============================================================
-        //  LOAD MESSAGES BY TYPE - FIXED
+        //  LOAD MESSAGES BY TYPE - GROUP CHAT REMOVED
         // ============================================================
         async function loadMessagesByType() {
             try {
@@ -711,12 +710,6 @@
                     const privateChatId = [userId, currentPrivateBuddyId].sort().join('_');
                     url += `chatType=private&privateChatId=${privateChatId}`;
                     console.log('🔒 Loading private chat:', privateChatId);
-                } else if (currentChatType === 'group') {
-                    // ✅ FIXED: Use user-based persistent group ID
-                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                    const groupId = `group_${userId}`;
-                    url += `chatType=group&groupId=${groupId}`;
-                    console.log('👥 Loading group chat with ID:', groupId);
                 } else {
                     url += `chatType=global`;
                     console.log('🌍 Loading global chat');
@@ -849,7 +842,7 @@
         }
  
         // ============================================================
-        //  DASHBOARD
+        //  DASHBOARD - GROUP CHAT REMOVED
         // ============================================================
         function showDashboard() {
             document.getElementById('landingPage').classList.add('hidden');
@@ -914,9 +907,8 @@
                         </div>
                     </div>
  
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <button class="btn-primary" onclick="showAddExamForm()" style="margin: 0; padding: 14px; font-size: 1rem;">➕ Add Exam</button>
-                        <button class="btn-primary" onclick="openGroupChat()" style="margin: 0; padding: 14px; font-size: 1rem; background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">💬 Group Chat</button>
                         <button class="btn-primary" onclick="openGlobalChat()" style="margin: 0; padding: 14px; font-size: 1rem; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">🌍 Global Chat</button>
                     </div>
                 </div>
@@ -925,7 +917,7 @@
         }
  
         // ============================================================
-        //  ADD EXAM
+        //  ADD EXAM - UPDATED WITH FREE TEXT INPUT
         // ============================================================
         function showAddExamForm() {
             const html = `
@@ -935,25 +927,16 @@
                     <div id="examMessage"></div>
                     <div class="form-group">
                         <label>📖 Exam Name</label>
-                        <select id="examName">
-                            <option value="">Select Exam</option>
-                            <option value="RRB ALP">RRB ALP</option>
-                            <option value="SSC CGL">SSC CGL</option>
-                            <option value="IBPS PO">IBPS PO</option>
-                            <option value="TNPSC">TNPSC</option>
-                            <option value="GATE">GATE</option>
-                            <option value="JEE Main">JEE Main</option>
-                            <option value="NEET">NEET</option>
-                        </select>
+                        <input type="text" id="examName" placeholder="Enter exam name (e.g., JEE Main, NEET, GATE, CAT...)" required>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>📅 Date</label>
-                            <input type="date" id="examDate">
+                            <input type="date" id="examDate" required>
                         </div>
                         <div class="form-group">
                             <label>📍 City</label>
-                            <input type="text" id="examCity" placeholder="e.g., Chennai">
+                            <input type="text" id="examCity" placeholder="e.g., Chennai" required>
                         </div>
                     </div>
                     <div class="form-group">
@@ -977,10 +960,10 @@
         }
  
         async function addExam() {
-            const examName = document.getElementById('examName').value;
+            const examName = document.getElementById('examName').value.trim();
             const examDate = document.getElementById('examDate').value;
-            const examCity = document.getElementById('examCity').value;
-            const examCenter = document.getElementById('examCenter').value;
+            const examCity = document.getElementById('examCity').value.trim();
+            const examCenter = document.getElementById('examCenter').value.trim();
  
             if (!examName || !examDate || !examCity) {
                 showExamMessage('Please fill all required fields!', 'error');
@@ -1075,7 +1058,7 @@
         }
  
         // ============================================================
-        //  CHAT FUNCTIONS - FIXED
+        //  CHAT FUNCTIONS - GROUP CHAT REMOVED
         // ============================================================
         
         function switchToGlobal() {
@@ -1083,7 +1066,6 @@
             currentChatType = 'global';
             currentPrivateBuddyId = null;
             currentPrivateBuddyName = null;
-            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnGlobal').classList.add('active');
@@ -1098,33 +1080,9 @@
             startMessageRefresh();
         }
         
-        function switchToGroup() {
-            stopMessageRefresh();
-            currentChatType = 'group';
-            currentPrivateBuddyId = null;
-            currentPrivateBuddyName = null;
-            
-            // ✅ FIXED: Use persistent group ID based on user ID
-            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-            currentGroupId = `group_${userId}`;
-            
-            document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('btnGroup').classList.add('active');
-            document.getElementById('chatTitleDisplay').textContent = '👥 Group Chat';
-            document.getElementById('chatUserInfo').textContent = 'Chat with all your buddies';
-            document.getElementById('privateUserSelector').style.display = 'none';
-            document.getElementById('blockBtn').style.display = 'none';
-            document.getElementById('blockedMessageContainer').style.display = 'none';
-            
-            loadMessagesByType();
-            displayMessages();
-            startMessageRefresh();
-        }
-        
         function switchToPrivate() {
             stopMessageRefresh();
             currentChatType = 'private';
-            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnPrivate').classList.add('active');
@@ -1207,20 +1165,10 @@
             startMessageRefresh();
         }
         
-        function openGroupChat() {
-            // ✅ FIXED: Set group ID before opening
-            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-            currentGroupId = `group_${userId}`;
-            switchToGroup();
-            document.getElementById('chatModal').classList.add('active');
-            startMessageRefresh();
-        }
-        
         function openPrivateChat(userId, userName) {
             currentChatType = 'private';
             currentPrivateBuddyId = userId;
             currentPrivateBuddyName = userName;
-            currentGroupId = null;
             
             document.querySelectorAll('.chat-controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btnPrivate').classList.add('active');
@@ -1247,7 +1195,7 @@
         }
  
         // ============================================================
-        //  SEND MESSAGE - FIXED
+        //  SEND MESSAGE - GROUP CHAT REMOVED
         // ============================================================
         async function sendMessage() {
             const input = document.getElementById('messageInput');
@@ -1291,13 +1239,6 @@
             if (currentChatType === 'private' && currentPrivateBuddyId) {
                 payload.targetUserId = currentPrivateBuddyId;
                 console.log('🔒 Sending private message to:', currentPrivateBuddyName);
-            } else if (currentChatType === 'group') {
-                // ✅ FIXED: Use persistent group ID
-                const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                const groupId = `group_${userId}`;
-                payload.groupId = groupId;
-                payload.chatId = groupId;
-                console.log('👥 Sending group message to:', groupId);
             } else {
                 payload.chatId = 'global';
                 console.log('🌍 Sending global message');
@@ -1342,7 +1283,7 @@
         }
  
         // ============================================================
-        //  DISPLAY MESSAGES - FIXED
+        //  DISPLAY MESSAGES - GROUP CHAT REMOVED
         // ============================================================
         function displayMessages() {
             const chatArea = document.getElementById('chatArea');
@@ -1375,14 +1316,6 @@
                     }
                     return true;
                 });
-            } else if (currentChatType === 'group') {
-                // ✅ FIXED: Filter by persistent group ID
-                const userIdGroup = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                const groupId = `group_${userIdGroup}`;
-                filteredMessages = messages.filter(m => 
-                    m.chatType === 'group' && m.groupId === groupId
-                );
-                console.log('👥 Filtering group messages with ID:', groupId);
             } else {
                 filteredMessages = messages.filter(m => m.chatType === 'global');
             }
@@ -1570,11 +1503,6 @@
                 
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
-                } else if (currentChatType === 'group') {
-                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                    const groupId = `group_${userId}`;
-                    payload.groupId = groupId;
-                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1649,11 +1577,6 @@
                 
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
-                } else if (currentChatType === 'group') {
-                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                    const groupId = `group_${userId}`;
-                    payload.groupId = groupId;
-                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1730,11 +1653,6 @@
                 
                 if (currentChatType === 'private' && currentPrivateBuddyId) {
                     payload.targetUserId = currentPrivateBuddyId;
-                } else if (currentChatType === 'group') {
-                    const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                    const groupId = `group_${userId}`;
-                    payload.groupId = groupId;
-                    payload.chatId = groupId;
                 }
                 
                 const msgResponse = await fetch(API_URL + '/api/messages', {
@@ -1793,11 +1711,6 @@
                         
                         if (currentChatType === 'private' && currentPrivateBuddyId) {
                             payload.targetUserId = currentPrivateBuddyId;
-                        } else if (currentChatType === 'group') {
-                            const userId = currentUser ? (currentUser.id || currentUser._id) : 'default';
-                            const groupId = `group_${userId}`;
-                            payload.groupId = groupId;
-                            payload.chatId = groupId;
                         }
                         
                         console.log('📍 Sharing location:', payload);
